@@ -1,0 +1,5 @@
+node_modules/
+.env
+dist/
+stitch_resin_art_showcase_portfolio/
+.DS_Store

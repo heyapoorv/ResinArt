@@ -1,0 +1,93 @@
+/* ── Google Fonts ── */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { font-family: 'Inter', system-ui, sans-serif; }
+  body { background-color: #f8f9fb; color: #191c1e; }
+  ::selection { background-color: #ffe088; color: #241a00; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #d0c5af; border-radius: 10px; }
+}
+
+@layer components {
+  /* Glassmorphism */
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-xl border border-white/20;
+    box-shadow: 0 30px 60px -15px rgba(212,175,55,0.08);
+  }
+  .glass-nav {
+    @apply bg-white/70 backdrop-blur-md border-b border-white/20;
+    box-shadow: 0 4px 30px rgba(212,175,55,0.05);
+  }
+
+  /* Ambient shadow */
+  .ambient-shadow { box-shadow: 0 30px 60px -15px rgba(212,175,55,0.1); }
+  .ambient-shadow-lg { box-shadow: 0 40px 80px -20px rgba(212,175,55,0.15); }
+
+  /* Reveal animation */
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .reveal.active { opacity: 1; transform: translateY(0); }
+
+  /* Nav underline hover */
+  .nav-link { @apply relative text-label-md font-inter text-on-surface-variant hover:text-primary transition-colors; }
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -4px; left: 50%;
+    width: 0; height: 2px;
+    background: #735c00;
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+  }
+  .nav-link:hover::after { width: 100%; }
+
+  /* Buttons */
+  .btn-primary {
+    @apply bg-primary text-on-primary font-inter font-semibold text-label-md px-lg py-sm rounded-full
+           hover:opacity-90 active:scale-95 transition-all;
+  }
+  .btn-ghost {
+    @apply border border-primary text-primary font-inter font-semibold text-label-md px-lg py-sm rounded-full
+           hover:bg-primary/5 active:scale-95 transition-all;
+  }
+  .btn-secondary {
+    @apply bg-primary-container text-on-primary-container font-inter font-semibold text-label-md px-lg py-sm rounded-full
+           hover:opacity-90 active:scale-95 transition-all;
+  }
+
+  /* Product card hover */
+  .product-card { transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); }
+  .product-card:hover { transform: scale(1.02); }
+
+  /* Masonry gallery */
+  .masonry { column-count: 2; column-gap: 1rem; }
+  @media (min-width: 768px) { .masonry { column-count: 3; } }
+  .masonry-item { break-inside: avoid; margin-bottom: 1rem; }
+
+  /* Admin sidebar active */
+  .sidebar-link {
+    @apply flex items-center gap-md px-md py-sm text-on-surface-variant
+           hover:bg-surface-container-highest rounded-lg transition-all duration-200 cursor-pointer;
+  }
+  .sidebar-link.active {
+    @apply bg-primary-container text-on-primary-container font-semibold;
+  }
+
+  /* Toggle switch */
+  .toggle-checkbox:checked { right: 0; border-color: #735c00; }
+  .toggle-checkbox:checked + .toggle-label { background-color: #d4af37; }
+}
+
+@layer utilities {
+  .font-playfair { font-family: 'Playfair Display', Georgia, serif; }
+  .font-inter    { font-family: 'Inter', system-ui, sans-serif; }
+}

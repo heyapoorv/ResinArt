@@ -1,0 +1,117 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        // ── Exact palette from DESIGN.md / Stitch HTML ──
+        primary:                   '#735c00',
+        'on-primary':              '#ffffff',
+        'primary-container':       '#d4af37',
+        'on-primary-container':    '#554300',
+        'primary-fixed':           '#ffe088',
+        'primary-fixed-dim':       '#e9c349',
+        'on-primary-fixed':        '#241a00',
+        'on-primary-fixed-variant':'#574500',
+        'inverse-primary':         '#e9c349',
+
+        secondary:                 '#5e604d',
+        'on-secondary':            '#ffffff',
+        'secondary-container':     '#e1e1c9',
+        'on-secondary-container':  '#636451',
+        'secondary-fixed':         '#e4e4cc',
+        'secondary-fixed-dim':     '#c8c8b0',
+        'on-secondary-fixed':      '#1b1d0e',
+        'on-secondary-fixed-variant':'#474836',
+
+        tertiary:                  '#60603e',
+        'on-tertiary':             '#ffffff',
+        'tertiary-container':      '#b6b58c',
+        'on-tertiary-container':   '#474727',
+        'tertiary-fixed':          '#e6e5b9',
+        'tertiary-fixed-dim':      '#cac99f',
+        'on-tertiary-fixed':       '#1d1d03',
+        'on-tertiary-fixed-variant':'#484828',
+
+        surface:                   '#f8f9fb',
+        'surface-dim':             '#d9dadc',
+        'surface-bright':          '#f8f9fb',
+        'surface-container-lowest':'#ffffff',
+        'surface-container-low':   '#f3f4f6',
+        'surface-container':       '#edeef0',
+        'surface-container-high':  '#e7e8ea',
+        'surface-container-highest':'#e1e2e4',
+        'surface-variant':         '#e1e2e4',
+        'surface-tint':            '#735c00',
+        'on-surface':              '#191c1e',
+        'on-surface-variant':      '#4d4635',
+        'inverse-surface':         '#2e3132',
+        'inverse-on-surface':      '#f0f1f3',
+
+        background:                '#f8f9fb',
+        'on-background':           '#191c1e',
+
+        outline:                   '#7f7663',
+        'outline-variant':         '#d0c5af',
+
+        error:                     '#ba1a1a',
+        'on-error':                '#ffffff',
+        'error-container':         '#ffdad6',
+        'on-error-container':      '#93000a',
+      },
+      fontFamily: {
+        'playfair': ['"Playfair Display"', 'Georgia', 'serif'],
+        'inter':    ['Inter', 'system-ui', 'sans-serif'],
+      },
+      fontSize: {
+        'display-lg': ['48px', { lineHeight: '1.1', letterSpacing: '-0.02em', fontWeight: '700' }],
+        'headline-lg': ['32px', { lineHeight: '1.2', fontWeight: '600' }],
+        'headline-md': ['24px', { lineHeight: '1.3', fontWeight: '500' }],
+        'body-lg':     ['18px', { lineHeight: '1.6', fontWeight: '400' }],
+        'body-md':     ['16px', { lineHeight: '1.6', fontWeight: '400' }],
+        'label-md':    ['14px', { lineHeight: '1.0', letterSpacing: '0.05em', fontWeight: '600' }],
+        'caption':     ['12px', { lineHeight: '1.4', fontWeight: '400' }],
+      },
+      spacing: {
+        'xs':   '4px',
+        'sm':   '8px',
+        'md':   '16px',
+        'lg':   '24px',
+        'xl':   '40px',
+        'xxl':  '80px',
+        'gutter': '24px',
+        'margin-mobile':  '16px',
+        'margin-desktop': '64px',
+      },
+      borderRadius: {
+        DEFAULT: '0.25rem',
+        lg:  '0.5rem',
+        xl:  '0.75rem',
+        '2xl': '1rem',
+        '3xl': '1.5rem',
+        full: '9999px',
+      },
+      animation: {
+        'fade-up': 'fadeUp 0.8s cubic-bezier(0.4,0,0.2,1) forwards',
+        'float':   'float 6s ease-in-out infinite',
+      },
+      keyframes: {
+        fadeUp: {
+          '0%':   { opacity: '0', transform: 'translateY(30px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%':      { transform: 'translateY(-10px)' },
+        },
+      },
+      boxShadow: {
+        'ambient': '0 30px 60px -15px rgba(212,175,55,0.1)',
+        'ambient-lg': '0 40px 80px -20px rgba(212,175,55,0.15)',
+        'glass': '0 4px 24px rgba(212,175,55,0.08)',
+      },
+    },
+  },
+  plugins: [],
+};
