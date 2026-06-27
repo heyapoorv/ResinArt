@@ -17,8 +17,8 @@ const Category = require('../models/Category');
 const Product  = require('../models/Product');
 const WebsiteSettings = require('../models/WebsiteSettings');
 
-const ADMIN_EMAIL    = process.env.SEED_ADMIN_EMAIL    || 'admin@auraresin.art';
-const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD || 'changeme!123';
+const ADMIN_EMAIL    = process.env.SEED_ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD;
 
 const defaultCategories = [
   { name: 'Ocean Series',       icon: 'waves'         },
