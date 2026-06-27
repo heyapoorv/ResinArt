@@ -1,5 +1,46 @@
+# Dependencies
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment Variables
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+server/.env
+
+# Build outputs
+client/dist/
+server/dist/
 dist/
-stitch_resin_art_showcase_portfolio/
+build/
+*.tgz
+
+# OS Files
 .DS_Store
+Thumbs.db
+*.swp
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Testing
+coverage/
+.nyc_output/
+
+# Logs
+logs/
+*.log
+
+# Misc
+stitch_resin_art_showcase_portfolio/

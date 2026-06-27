@@ -11,15 +11,18 @@ const { body, query } = require('express-validator');
 const createProductValidator = [
   body('name')
     .trim()
+    .escape()
     .notEmpty().withMessage('Product name is required.')
     .isLength({ max: 200 }).withMessage('Name cannot exceed 200 characters.'),
 
   body('description')
     .trim()
+    .escape()
     .notEmpty().withMessage('Description is required.'),
 
   body('price')
     .notEmpty().withMessage('Price is required.')
+    .toFloat()
     .isFloat({ min: 0 }).withMessage('Price must be a positive number.'),
 
   body('category')
@@ -37,11 +40,13 @@ const createProductValidator = [
   body('dimensions')
     .optional()
     .trim()
+    .escape()
     .isLength({ max: 100 }).withMessage('Dimensions cannot exceed 100 characters.'),
 
   body('sku')
     .optional()
     .trim()
+    .escape()
     .isLength({ max: 50 }).withMessage('SKU cannot exceed 50 characters.'),
 ];
 
@@ -49,16 +54,19 @@ const updateProductValidator = [
   body('name')
     .optional()
     .trim()
+    .escape()
     .notEmpty().withMessage('Product name cannot be empty.')
     .isLength({ max: 200 }).withMessage('Name cannot exceed 200 characters.'),
 
   body('description')
     .optional()
     .trim()
+    .escape()
     .notEmpty().withMessage('Description cannot be empty.'),
 
   body('price')
     .optional()
+    .toFloat()
     .isFloat({ min: 0 }).withMessage('Price must be a positive number.'),
 
   body('category')
@@ -76,6 +84,7 @@ const updateProductValidator = [
   body('dimensions')
     .optional()
     .trim()
+    .escape()
     .isLength({ max: 100 }).withMessage('Dimensions cannot exceed 100 characters.'),
 ];
 
@@ -83,6 +92,7 @@ const searchQueryValidator = [
   query('q')
     .optional()
     .trim()
+    .escape()
     .isLength({ max: 200 }).withMessage('Search query is too long.'),
 
   query('page')

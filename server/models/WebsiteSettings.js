@@ -1,21 +1,17 @@
 /**
  * models/WebsiteSettings.js
  *
- * Singleton document – there is always exactly one record.
- * Fields match the contact / footer / hero sections across all pages:
- *   - businessName  → "AURA RESIN" branding
- *   - heroTitle     → home page hero H1
- *   - heroSubtitle  → home page hero paragraph
- *   - logo          → stored as Cloudinary URL
- *   - about         → about section body text
- *   - whatsapp      → "+1 (234) 567-890" floating button & contact section
- *   - email         → "hello@auraresin.art" contact section
- *   - instagram     → footer social links
- *   - facebook      → footer social links
- *   - address       → "123 Artisan Way, Creative District"
+ * Improvements:
+ *  - Added email format validation regex
+ *  - Added URL format validation for instagram/facebook fields
  */
 
 const mongoose = require('mongoose');
+
+const urlValidator = {
+  validator: (v) => !v || /^https?:\/\/.+/.test(v),
+  message  : 'Must be a valid URL starting with http:// or https://',
+};
 
 const WebsiteSettingsSchema = new mongoose.Schema(
   {
@@ -49,20 +45,26 @@ const WebsiteSettingsSchema = new mongoose.Schema(
       trim   : true,
     },
     email: {
-      type   : String,
-      default: 'hello@auraresin.art',
+      type     : String,
+      default  : 'hello@auraresin.art',
       lowercase: true,
-      trim   : true,
+      trim     : true,
+      validate : {
+        validator: (v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+        message  : 'Must be a valid email address',
+      },
     },
     instagram: {
-      type   : String,
-      default: null,
-      trim   : true,
+      type    : String,
+      default : null,
+      trim    : true,
+      validate: urlValidator,
     },
     facebook: {
-      type   : String,
-      default: null,
-      trim   : true,
+      type    : String,
+      default : null,
+      trim    : true,
+      validate: urlValidator,
     },
     address: {
       type   : String,

@@ -1,12 +1,11 @@
 /**
  * models/Product.js
  *
- * Mirrors every field visible across the frontend:
- *   - Home page: Featured Collection cards (name, category, price, images, featured)
- *   - Products page: grid cards + filter/sort (name, category, price, available, images)
- *   - Product Detail: name, description, price, dimensions, images[], category
- *   - Admin Products table: name, category, price, featured (toggle), available
- *   - Admin Dashboard: total products count, featured count
+ * Improvements:
+ *  - Added compound indexes for common query patterns
+ *    { featured: 1, available: 1 } – home page featured products query
+ *    { category: 1, available: 1 } – category filter page query
+ *    { sortOrder: 1 }              – manual curation sort
  */
 
 const mongoose = require('mongoose');
@@ -63,8 +62,7 @@ const ProductSchema = new mongoose.Schema(
       default: true,
     },
     /**
-     * dimensions – free-form string to match frontend display:
-     * "60cm Diameter", "30x90cm", "45cm Diameter", etc.
+     * dimensions – free-form string: "60cm Diameter", "30x90cm", etc.
      */
     dimensions: {
       type   : String,
@@ -72,18 +70,17 @@ const ProductSchema = new mongoose.Schema(
       trim   : true,
     },
     /**
-     * sku – optional Stock Keeping Unit visible in admin table
-     * e.g. "AR-CD-004", "AR-GD-112"
+     * sku – optional Stock Keeping Unit, e.g. "AR-GD-001"
      */
     sku: {
-      type  : String,
-      unique: true,
-      sparse: true, // allow null/undefined
-      trim  : true,
+      type     : String,
+      unique   : true,
+      sparse   : true, // allow null/undefined (no sku collision)
+      trim     : true,
       uppercase: true,
     },
     /**
-     * sortOrder – used for manual curation on the homepage
+     * sortOrder – manual curation for the homepage featured section
      */
     sortOrder: {
       type   : Number,
@@ -97,7 +94,7 @@ const ProductSchema = new mongoose.Schema(
   }
 );
 
-// ── Auto-generate slug from name ──
+// ── Auto-generate slug from name ──────────────────────────
 ProductSchema.pre('save', function (next) {
   if (this.isModified('name')) {
     this.slug = this.name
@@ -109,15 +106,18 @@ ProductSchema.pre('save', function (next) {
   next();
 });
 
-// ── Indexes for search, filter, sort ──
+// ── Single-field indexes ──────────────────────────────────
 ProductSchema.index({ name: 'text', description: 'text' }); // full-text search
-ProductSchema.index({ category: 1 });
-ProductSchema.index({ featured: 1 });
-ProductSchema.index({ available: 1 });
 ProductSchema.index({ price: 1 });
 ProductSchema.index({ createdAt: -1 });
+ProductSchema.index({ sortOrder: 1 });
 
-// ── Virtual: thumbnail (first image URL) ──
+// ── Compound indexes for common query patterns ────────────
+ProductSchema.index({ featured: 1, available: 1 }); // GET /products/featured
+ProductSchema.index({ category: 1, available: 1 }); // GET /products/category/:slug
+ProductSchema.index({ category: 1, createdAt: -1 }); // category page sorted by newest
+
+// ── Virtual: thumbnail (first image URL) ─────────────────
 ProductSchema.virtual('thumbnail').get(function () {
   return this.images.length > 0 ? this.images[0].url : null;
 });

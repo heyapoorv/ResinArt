@@ -1,11 +1,9 @@
 /**
  * controllers/auth.controller.js
  *
- * POST /api/auth/login
- *   → Verifies credentials, returns JWT + admin profile
- *
- * GET /api/auth/me   (protected)
- *   → Returns current admin profile
+ * Improvements:
+ *  - Logs successful logins (info: email + IP)
+ *  - Logs failed login attempts (warn: email + IP)
  */
 
 const Admin         = require('../models/Admin');
@@ -13,6 +11,7 @@ const generateToken = require('../utils/generateToken');
 const asyncHandler  = require('../utils/asyncHandler');
 const ApiError      = require('../utils/ApiError');
 const { sendSuccess } = require('../utils/ApiResponse');
+const logger        = require('../utils/logger');
 
 // ── POST /api/auth/login ──────────────────────────────────
 exports.login = asyncHandler(async (req, res) => {
@@ -22,10 +21,13 @@ exports.login = asyncHandler(async (req, res) => {
   const admin = await Admin.findOne({ email }).select('+passwordHash');
 
   if (!admin || !(await admin.matchPassword(password))) {
+    logger.warn('Failed login attempt', { email, ip: req.ip });
     throw new ApiError(401, 'Invalid email or password.');
   }
 
   const token = generateToken(admin._id);
+
+  logger.info('Admin login successful', { email, ip: req.ip });
 
   sendSuccess(res, {
     token,

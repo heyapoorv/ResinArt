@@ -7,6 +7,7 @@ import Footer from '../../components/layout/Footer.jsx';
 import ProductCard from '../../components/products/ProductCard.jsx';
 import Spinner from '../../components/ui/Spinner.jsx';
 import Badge from '../../components/ui/Badge.jsx';
+import SEOMeta from '../../components/ui/SEOMeta.jsx';
 import { productsApi } from '../../api/products.api.js';
 import { settingsApi } from '../../api/settings.api.js';
 
@@ -50,6 +51,12 @@ export default function ProductDetailPage() {
 
   return (
     <div className="bg-background min-h-screen">
+      <SEOMeta
+        title={product.name}
+        description={product.description?.slice(0, 160)}
+        image={product.images?.[0]?.url}
+        type="product"
+      />
       <Navbar />
       <main className="pt-28 pb-xxl px-margin-mobile md:px-margin-desktop max-w-7xl mx-auto">
 
@@ -67,8 +74,12 @@ export default function ProductDetailPage() {
             <div className="relative aspect-square overflow-hidden rounded-2xl bg-surface-container-high ambient-shadow">
               {images.length > 0 ? (
                 <>
-                  <img src={images[activeImg]?.url} alt={product.name}
-                    className="w-full h-full object-cover" />
+                  <img
+                    src={images[activeImg]?.url}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                    decoding="async"
+                  />
                   {images.length > 1 && (
                     <>
                       <button onClick={prevImg}
@@ -95,7 +106,7 @@ export default function ProductDetailPage() {
                   <button key={i} onClick={() => setActiveImg(i)}
                     className={`w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all
                       ${activeImg === i ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100'}`}>
-                    <img src={img.url} alt="" className="w-full h-full object-cover" />
+                    <img src={img.url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   </button>
                 ))}
               </div>

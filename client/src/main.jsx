@@ -8,8 +8,13 @@ import './index.css';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,  // 5 minutes
-      retry: 1,
+      staleTime         : 5 * 60 * 1000,  // 5 minutes
+      gcTime            : 10 * 60 * 1000, // 10 minutes (was cacheTime in v4)
+      retry             : 1,
+      refetchOnWindowFocus: false,        // avoids extra fetches on tab switch
+    },
+    mutations: {
+      retry: 0, // never auto-retry failed mutations
     },
   },
 });
@@ -22,13 +27,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         position="top-right"
         toastOptions={{
           style: {
-            background: '#fff',
-            color: '#191c1e',
-            border: '1px solid #d0c5af',
-            fontFamily: 'Inter, sans-serif',
-            fontSize: '14px',
+            background : '#fff',
+            color      : '#191c1e',
+            border     : '1px solid #d0c5af',
+            fontFamily : 'Inter, sans-serif',
+            fontSize   : '14px',
           },
           success: { iconTheme: { primary: '#735c00', secondary: '#fff' } },
+          duration: 4000,
         }}
       />
     </QueryClientProvider>

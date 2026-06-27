@@ -1,14 +1,9 @@
 /**
  * controllers/category.controller.js
  *
- * Public:
- *   GET  /api/categories            – all categories
- *   GET  /api/categories/:id        – single category
- *
- * Protected (admin):
- *   POST   /api/categories          – create
- *   PUT    /api/categories/:id      – update
- *   DELETE /api/categories/:id      – delete (only if no products reference it)
+ * Improvements:
+ *  - Fixed N+1 query: replaced Promise.all(map(countDocuments)) with a single
+ *    MongoDB aggregation ($lookup + $count) to get product counts in one round-trip
  */
 
 const Category     = require('../models/Category');
@@ -19,17 +14,33 @@ const { sendSuccess, sendCreated } = require('../utils/ApiResponse');
 
 // ── GET /api/categories ───────────────────────────────────
 exports.getCategories = asyncHandler(async (_req, res) => {
-  const categories = await Category.find().sort({ name: 1 });
+  /**
+   * Single aggregation instead of N+1 countDocuments calls.
+   * Looks up products for each category and counts them.
+   */
+  const categories = await Category.aggregate([
+    { $sort: { name: 1 } },
+    {
+      $lookup: {
+        from        : 'products',
+        localField  : '_id',
+        foreignField: 'category',
+        as          : 'products',
+      },
+    },
+    {
+      $addFields: {
+        productCount: { $size: '$products' },
+      },
+    },
+    {
+      $project: {
+        products: 0, // don't return the full products array
+      },
+    },
+  ]);
 
-  // Attach product count to each category
-  const withCounts = await Promise.all(
-    categories.map(async (cat) => {
-      const count = await Product.countDocuments({ category: cat._id });
-      return { ...cat.toObject(), productCount: count };
-    })
-  );
-
-  sendSuccess(res, withCounts);
+  sendSuccess(res, categories);
 });
 
 // ── GET /api/categories/:id ───────────────────────────────

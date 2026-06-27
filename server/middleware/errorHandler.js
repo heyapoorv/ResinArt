@@ -4,18 +4,15 @@
  * Global error handling middleware.
  * Must be the LAST middleware registered in app.js.
  *
- * Handles:
- *  - ApiError (operational errors) → structured response
- *  - Mongoose ValidationError     → 400 with field details
- *  - Mongoose CastError           → 400 (invalid ObjectId)
- *  - Mongoose Duplicate Key       → 409 Conflict
- *  - JWT errors                   → 401
- *  - Multer errors                → 400
- *  - Generic 500 fallback
+ * Improvements:
+ *  - Uses Winston logger instead of console.error
+ *  - Includes request ID in error logs for tracing
+ *  - Adds timestamp to error responses
  */
 
 const mongoose = require('mongoose');
 const ApiError = require('../utils/ApiError');
+const logger   = require('../utils/logger');
 
 const errorHandler = (err, req, res, _next) => {
   let statusCode = err.statusCode || 500;
@@ -50,28 +47,49 @@ const errorHandler = (err, req, res, _next) => {
   if (err.name === 'TokenExpiredError')  { statusCode = 401; message = 'Token has expired.'; }
 
   // ── Multer Errors ─────────────────────────────────────
-  if (err.code === 'LIMIT_FILE_SIZE')    { statusCode = 400; message = 'File size exceeds the 10 MB limit.'; }
-  if (err.code === 'LIMIT_FILE_COUNT')   { statusCode = 400; message = 'Too many files uploaded.'; }
+  if (err.code === 'LIMIT_FILE_SIZE')       { statusCode = 400; message = 'File size exceeds the 10 MB limit.'; }
+  if (err.code === 'LIMIT_FILE_COUNT')      { statusCode = 400; message = 'Too many files uploaded.'; }
   if (err.code === 'LIMIT_UNEXPECTED_FILE') { statusCode = 400; message = 'Unexpected file field.'; }
 
-  // ── Development vs Production ─────────────────────────
+  // ── Log errors ────────────────────────────────────────
+  const logContext = {
+    requestId : req.id,
+    method    : req.method,
+    url       : req.originalUrl,
+    statusCode,
+    ip        : req.ip,
+  };
+
+  if (statusCode >= 500) {
+    logger.error(message, { ...logContext, stack: err.stack });
+  } else if (statusCode >= 400) {
+    logger.warn(message, logContext);
+  }
+
+  // ── Development: expose stack trace ───────────────────
   if (process.env.NODE_ENV === 'development') {
-    console.error('❌ [ERROR]', err);
     return res.status(statusCode).json({
-      success: false,
+      success  : false,
       message,
       errors,
-      stack: err.stack,
+      stack    : err.stack,
+      timestamp: new Date().toISOString(),
     });
   }
 
-  // In production, hide stack traces and internal errors
+  // ── Production: hide implementation details ────────────
   if (!err.isOperational) {
     statusCode = 500;
     message    = 'Something went wrong. Please try again later.';
+    errors     = [];
   }
 
-  res.status(statusCode).json({ success: false, message, errors });
+  res.status(statusCode).json({
+    success  : false,
+    message,
+    errors,
+    timestamp: new Date().toISOString(),
+  });
 };
 
 module.exports = errorHandler;

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { authApi } from '../api/auth.api.js';
 
 const AuthContext = createContext(null);
@@ -17,19 +17,19 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, [token]);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     const data = await authApi.login(email, password);
     localStorage.setItem('aura_token', data.token);
     setToken(data.token);
     setAdmin(data.admin);
     return data;
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem('aura_token');
     setToken(null);
     setAdmin(null);
-  };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ admin, token, loading, login, logout }}>

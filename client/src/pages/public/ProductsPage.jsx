@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { RefreshCw } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar.jsx';
 import Footer from '../../components/layout/Footer.jsx';
 import FilterBar from '../../components/products/FilterBar.jsx';
 import ProductCard from '../../components/products/ProductCard.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
-import Spinner from '../../components/ui/Spinner.jsx';
+import ProductGridSkeleton from '../../components/ui/PageSkeleton.jsx';
+import SEOMeta from '../../components/ui/SEOMeta.jsx';
 import { productsApi } from '../../api/products.api.js';
 
 export default function ProductsPage() {
@@ -27,19 +29,28 @@ export default function ProductsPage() {
     if (filters.sort !== 'newest') p.sort = filters.sort;
     if (filters.page > 1) p.page = filters.page;
     setSearchParams(p);
-  }, [filters]);
+  }, [filters, setSearchParams]);
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['products', filters],
-    queryFn: () => productsApi.getAll(filters).then((r) => r),
-    keepPreviousData: true,
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey     : ['products', filters],
+    queryFn      : () => productsApi.getAll(filters).then((r) => r),
+    placeholderData: (prev) => prev, // keeps previous data while loading next page
   });
 
   const products   = data?.data   || [];
   const pagination = data?.pagination;
 
+  const handlePage = useCallback(
+    (pg) => setFilters((f) => ({ ...f, page: pg })),
+    []
+  );
+
   return (
     <div className="bg-background min-h-screen">
+      <SEOMeta
+        title="Full Collection"
+        description="Browse our complete collection of handcrafted resin art. Filter by category, price, and more."
+      />
       <Navbar />
 
       {/* Page header */}
@@ -62,10 +73,18 @@ export default function ProductsPage() {
       {/* Grid */}
       <main className="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-xxl">
         {isLoading ? (
-          <div className="flex justify-center py-xxl"><Spinner size="lg" /></div>
+          <ProductGridSkeleton count={12} />
         ) : isError ? (
-          <div className="text-center py-xxl text-on-surface-variant font-inter">
-            Failed to load products. Make sure the backend is running.
+          <div className="flex flex-col items-center py-xxl text-on-surface-variant gap-lg">
+            <p className="font-playfair text-headline-lg opacity-40">Failed to load products</p>
+            <p className="font-inter text-body-md opacity-50">Please check your connection and try again.</p>
+            <button
+              onClick={() => refetch()}
+              className="btn-ghost flex items-center gap-sm"
+            >
+              <RefreshCw size={16} />
+              Try Again
+            </button>
           </div>
         ) : products.length === 0 ? (
           <div className="flex flex-col items-center py-xxl gap-md text-on-surface-variant">
@@ -78,13 +97,13 @@ export default function ProductsPage() {
               {products.map((p) => <ProductCard key={p._id} product={p} />)}
             </div>
 
-            {/* Pagination */}
             {pagination && pagination.pages > 1 && (
               <div className="flex justify-center mt-xxl">
                 <Pagination
                   page={pagination.page}
                   pages={pagination.pages}
-                  onPage={(pg) => setFilters((f) => ({ ...f, page: pg }))} />
+                  onPage={handlePage}
+                />
               </div>
             )}
           </>

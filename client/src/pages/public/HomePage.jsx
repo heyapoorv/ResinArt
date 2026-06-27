@@ -10,6 +10,7 @@ import FaqSection from '../../components/home/FaqSection.jsx';
 import ContactSection from '../../components/home/ContactSection.jsx';
 import { useQuery } from '@tanstack/react-query';
 import { settingsApi } from '../../api/settings.api.js';
+import SEOMeta from '../../components/ui/SEOMeta.jsx';
 
 // Scroll reveal observer
 function useReveal() {
@@ -37,6 +38,10 @@ export default function HomePage() {
 
   return (
     <div className="bg-background min-h-screen">
+      <SEOMeta
+        title={data?.heroTitle || 'Handcrafted Resin Art'}
+        description={data?.heroSubtitle || 'Discover the fusion of nature and artistry. Each piece is a unique story told in glass-like resin.'}
+      />
       <Navbar />
       <HeroSection />
       <FeaturedCollection />

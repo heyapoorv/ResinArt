@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -8,21 +8,28 @@ import Modal from '../../components/ui/Modal.jsx';
 import Spinner from '../../components/ui/Spinner.jsx';
 import { categoriesApi } from '../../api/categories.api.js';
 
+// ── Category Form Modal ───────────────────────────────────
 function CategoryFormModal({ open, onClose, category }) {
-  const isEditing = !!category;
+  const isEditing  = !!category;
   const queryClient = useQueryClient();
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
-  useState(() => {
-    if (category) {
-      reset({ name: category.name, description: category.description, icon: category.icon });
-    } else {
-      reset({ name: '', description: '', icon: '' });
+  // BUG FIX: was using useState(() => ...) as if it were useEffect.
+  // useEffect is the correct hook for syncing props to form state.
+  useEffect(() => {
+    if (open) {
+      if (category) {
+        reset({ name: category.name, description: category.description, icon: category.icon });
+      } else {
+        reset({ name: '', description: '', icon: '' });
+      }
     }
-  }, [category, reset]);
+  }, [category, open, reset]);
 
   const mutation = useMutation({
-    mutationFn: (data) => isEditing ? categoriesApi.update(category._id, data) : categoriesApi.create(data),
+    mutationFn: (data) => isEditing
+      ? categoriesApi.update(category._id, data)
+      : categoriesApi.create(data),
     onSuccess: () => {
       toast.success(isEditing ? 'Category updated' : 'Category created');
       queryClient.invalidateQueries({ queryKey: ['categories'] });
@@ -35,15 +42,25 @@ function CategoryFormModal({ open, onClose, category }) {
     <Modal open={open} onClose={onClose} title={isEditing ? 'Edit Category' : 'New Category'} size="sm">
       <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-md">
         <div className="flex flex-col gap-xs">
-          <label className="font-inter text-caption uppercase tracking-widest text-on-surface-variant">Name *</label>
-          <input {...register('name', { required: 'Name is required' })}
-            className="border-b border-outline-variant py-sm focus:border-primary focus:outline-none transition-colors" />
+          <label className="font-inter text-caption uppercase tracking-widest text-on-surface-variant">
+            Name *
+          </label>
+          <input
+            {...register('name', { required: 'Name is required' })}
+            className="border-b border-outline-variant py-sm focus:border-primary focus:outline-none transition-colors"
+            aria-required="true"
+          />
           {errors.name && <span className="text-error text-caption">{errors.name.message}</span>}
         </div>
         <div className="flex flex-col gap-xs">
-          <label className="font-inter text-caption uppercase tracking-widest text-on-surface-variant">Description</label>
-          <textarea {...register('description')} rows={3}
-            className="border border-outline-variant rounded-xl p-md focus:border-primary focus:outline-none transition-colors resize-none" />
+          <label className="font-inter text-caption uppercase tracking-widest text-on-surface-variant">
+            Description
+          </label>
+          <textarea
+            {...register('description')}
+            rows={3}
+            className="border border-outline-variant rounded-xl p-md focus:border-primary focus:outline-none transition-colors resize-none"
+          />
         </div>
         <div className="flex justify-end gap-md pt-md">
           <button type="button" onClick={onClose} className="btn-ghost">Cancel</button>
@@ -56,14 +73,42 @@ function CategoryFormModal({ open, onClose, category }) {
   );
 }
 
+// ── Confirm Delete Modal ──────────────────────────────────
+function ConfirmDeleteModal({ open, onClose, onConfirm, categoryName, isPending }) {
+  return (
+    <Modal open={open} onClose={onClose} title="Delete Category" size="sm">
+      <div className="space-y-lg">
+        <p className="font-inter text-body-md text-on-surface-variant">
+          Are you sure you want to delete <strong className="text-on-surface">"{categoryName}"</strong>?
+          This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-md">
+          <button type="button" onClick={onClose} className="btn-ghost">Cancel</button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isPending}
+            className="btn-primary bg-error hover:bg-error/90 flex items-center gap-sm disabled:opacity-60"
+          >
+            {isPending && <Spinner size="sm" />}
+            Delete
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────
 export default function AdminCategoriesPage() {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editCat, setEditCat] = useState(null);
+  const [modalOpen, setModalOpen]   = useState(false);
+  const [editCat, setEditCat]       = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null); // category to confirm delete
   const queryClient = useQueryClient();
 
   const { data: categories, isLoading } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => categoriesApi.getAll().then((d) => d.data),
+    queryFn : () => categoriesApi.getAll().then((d) => d.data),
   });
 
   const deleteMutation = useMutation({
@@ -71,12 +116,13 @@ export default function AdminCategoriesPage() {
     onSuccess: () => {
       toast.success('Category deleted');
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      setDeleteTarget(null);
     },
     onError: (e) => toast.error(e.message || 'Cannot delete category'),
   });
 
   const handleEdit = (c) => { setEditCat(c); setModalOpen(true); };
-  const handleAdd = () => { setEditCat(null); setModalOpen(true); };
+  const handleAdd  = ()  => { setEditCat(null); setModalOpen(true); };
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -116,12 +162,18 @@ export default function AdminCategoriesPage() {
                   </td>
                   <td className="px-lg py-md">
                     <div className="flex gap-sm">
-                      <button onClick={() => handleEdit(c)} className="p-sm hover:text-primary hover:bg-primary/10 rounded-lg">
+                      <button
+                        onClick={() => handleEdit(c)}
+                        className="p-sm hover:text-primary hover:bg-primary/10 rounded-lg"
+                        aria-label={`Edit ${c.name}`}
+                      >
                         <Pencil size={16} />
                       </button>
-                      <button onClick={() => {
-                        if (confirm(`Delete category "${c.name}"?`)) deleteMutation.mutate(c._id);
-                      }} className="p-sm hover:text-error hover:bg-red-50 rounded-lg">
+                      <button
+                        onClick={() => setDeleteTarget(c)}
+                        className="p-sm hover:text-error hover:bg-red-50 rounded-lg"
+                        aria-label={`Delete ${c.name}`}
+                      >
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -132,7 +184,21 @@ export default function AdminCategoriesPage() {
           </table>
         </div>
       </main>
-      {modalOpen && <CategoryFormModal open={modalOpen} onClose={() => setModalOpen(false)} category={editCat} />}
+
+      <CategoryFormModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        category={editCat}
+      />
+
+      {/* Confirmation modal replaces native window.confirm() */}
+      <ConfirmDeleteModal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteMutation.mutate(deleteTarget._id)}
+        categoryName={deleteTarget?.name}
+        isPending={deleteMutation.isPending}
+      />
     </div>
   );
 }

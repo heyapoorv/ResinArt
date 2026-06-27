@@ -1,17 +1,10 @@
 /**
  * controllers/product.controller.js
  *
- * Public endpoints (no auth):
- *   GET  /api/products            – list with pagination, filter, sort, search
- *   GET  /api/products/featured   – featured products (home page)
- *   GET  /api/products/search     – full-text search  (?q=term)
- *   GET  /api/products/category/:slug – filter by category slug
- *   GET  /api/products/:id        – single product detail
- *
- * Protected endpoints (admin JWT required):
- *   POST   /api/products          – create product + upload images
- *   PUT    /api/products/:id      – update product (partial)
- *   DELETE /api/products/:id      – delete product + remove images from Cloudinary
+ * Improvements:
+ *  - Cache-Control headers on GET /featured (short TTL, stale-while-revalidate)
+ *  - Image count validation on update (prevent > 10 total)
+ *  - Cloudinary image upload logged
  */
 
 const Product   = require('../models/Product');
@@ -21,6 +14,7 @@ const ApiError       = require('../utils/ApiError');
 const { sendSuccess, sendCreated, sendPaginated } = require('../utils/ApiResponse');
 const { buildFilter, buildSort, paginate }        = require('../services/product.service');
 const { deleteImages, filesToImageDocs }          = require('../services/cloudinary.service');
+const logger         = require('../utils/logger');
 
 // ── GET /api/products ─────────────────────────────────────
 exports.getProducts = asyncHandler(async (req, res) => {
@@ -41,6 +35,9 @@ exports.getFeaturedProducts = asyncHandler(async (_req, res) => {
     .limit(12)
     .populate('category', 'name slug');
 
+  // Short cache for featured products – safe for public CDN caching
+  res.setHeader('Cache-Control', 'public, max-age=120, stale-while-revalidate=60');
+
   sendSuccess(res, products);
 });
 
@@ -51,7 +48,6 @@ exports.searchProducts = asyncHandler(async (req, res) => {
   const limit = Math.min(50, parseInt(req.query.limit) || 12);
 
   if (!q) {
-    // Return all products when query is empty
     const filter = buildFilter({});
     const sort   = buildSort('newest');
     const { docs, pagination } = await paginate(filter, sort, page, limit);
@@ -86,7 +82,6 @@ exports.getProductsByCategory = asyncHandler(async (req, res) => {
   const limit    = Math.min(50, parseInt(req.query.limit) || 12);
   const sort     = buildSort(req.query.sort);
 
-  // Resolve category by slug OR name (flexibility for frontend)
   const category = await Category.findOne({
     $or: [{ slug }, { name: { $regex: new RegExp(`^${slug}$`, 'i') } }],
   });
@@ -107,7 +102,6 @@ exports.getProductById = asyncHandler(async (req, res) => {
 
   if (!product) throw new ApiError(404, 'Product not found.');
 
-  // Fetch 3 related products from the same category (for product detail page)
   const related = await Product
     .find({
       category: product.category._id,
@@ -127,11 +121,9 @@ exports.createProduct = asyncHandler(async (req, res) => {
     featured, available, dimensions, sku, sortOrder,
   } = req.body;
 
-  // Verify category exists
   const cat = await Category.findById(category);
   if (!cat) throw new ApiError(400, 'Provided category does not exist.');
 
-  // Build image documents from uploaded files
   const images = filesToImageDocs(req.files || []);
 
   const product = await Product.create({
@@ -141,6 +133,10 @@ exports.createProduct = asyncHandler(async (req, res) => {
     dimensions, sku, sortOrder,
     images,
   });
+
+  if (images.length > 0) {
+    logger.info('Product images uploaded', { productId: product._id, count: images.length });
+  }
 
   await product.populate('category', 'name slug');
   sendCreated(res, product, 'Product created successfully.');
@@ -154,10 +150,9 @@ exports.updateProduct = asyncHandler(async (req, res) => {
   const {
     name, description, category, price,
     featured, available, dimensions, sku, sortOrder,
-    removeImages, // JSON array of publicIds to remove e.g. ["abc","xyz"]
+    removeImages,
   } = req.body;
 
-  // Apply scalar updates
   if (name        !== undefined) product.name        = name;
   if (description !== undefined) product.description = description;
   if (price       !== undefined) product.price       = price;
@@ -188,9 +183,11 @@ exports.updateProduct = asyncHandler(async (req, res) => {
   if (req.files && req.files.length > 0) {
     const newImages = filesToImageDocs(req.files);
     product.images.push(...newImages);
+    // Enforce 10-image limit
     if (product.images.length > 10) {
-      product.images = product.images.slice(-10);
+      throw new ApiError(400, `Cannot exceed 10 images per product. Current: ${product.images.length}`);
     }
+    logger.info('Product images added', { productId: product._id, added: newImages.length });
   }
 
   await product.save();
@@ -204,8 +201,8 @@ exports.deleteProduct = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id);
   if (!product) throw new ApiError(404, 'Product not found.');
 
-  // Remove all images from Cloudinary
   await deleteImages(product.images);
+  logger.info('Product deleted', { productId: product._id, name: product.name });
 
   await product.deleteOne();
 

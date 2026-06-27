@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Block admin section from search engines
+Disallow: /admin/
+Disallow: /admin
+
+Sitemap: /sitemap.xml
